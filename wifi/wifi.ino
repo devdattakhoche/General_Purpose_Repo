@@ -6,8 +6,8 @@
 
 
 // Wifi credentials
-const char *WIFI_SSID = "Mtnl";
-const char *WIFI_PASSWORD = "20830829";
+const char *WIFI_SSID = "Galaxy A51E621";
+const char *WIFI_PASSWORD = "15412342";
 
 // The name of the device. This MUST match up with the name defined in the AWS console
 #define DEVICE_NAME "GOT8"
@@ -70,11 +70,14 @@ void sendJsonToAWS()
   StaticJsonDocument<200> jsonDoc;
 //  JsonObject stateObj = jsonDoc.createNestedObject("state");
   
-  jsonDoc["deviceID"] = WiFi.macAddress();
+  jsonDoc["deviceId"] = WiFi.macAddress();
   int numberOfNetworks = WiFi.scanNetworks();
      
   for(int i =0; i<numberOfNetworks; i++)
-       jsonDoc[WiFi.BSSIDstr(i)] = WiFi.RSSI(i);
+//       jsonDoc[WiFi.BSSIDstr(i)] = WiFi.RSSI(i);
+//        Serial.println(WiFi.SSID(i));
+//        Serial.println(WiFi.BSSIDstr(i));
+       jsonDoc[WiFi.SSID(i)] = WiFi.RSSI(i);
 
   Serial.println("Publishing message to AWS...");
   char jsonBuffer[512];
@@ -92,5 +95,5 @@ void setup() {
 void loop() {
   sendJsonToAWS();
   client.loop();
-  delay(10000);
+  delay(1000);
 }

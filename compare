@@ -1,0 +1,50 @@
+import pandas as pd
+
+# Load the CSV file
+data = pd.read_csv('your_file.csv')
+
+# Initialize lists to store the report details
+missing_ids = []
+count_mismatch = []
+
+# Check for missing IDs and count mismatches
+for _, row in data.iterrows():
+    sybase_id = row['sybase_id']
+    sybase_count = row['sybase_count']
+    mysql_id = row['mysql_id']
+    mysql_count = row['mysql_count']
+
+    # Check if sybase_id is missing in mysql_id column
+    if sybase_id not in data['mysql_id'].values:
+        missing_ids.append(sybase_id)
+    else:
+        # Check if sybase_count is greater than mysql_count
+        if sybase_count > mysql_count:
+            count_mismatch.append({
+                'id': sybase_id,
+                'sybase_count': sybase_count,
+                'mysql_count': mysql_count
+            })
+
+# Create a DataFrame for the count mismatches
+count_mismatch_df = pd.DataFrame(count_mismatch)
+
+# Filter rows where count is greater than 3
+count_gt_3 = count_mismatch_df[count_mismatch_df['sybase_count'] > 3]
+
+# Generate the report
+report = {
+    'missing_ids': missing_ids,
+    'count_mismatch': count_mismatch_df.to_dict('records'),
+    'count_gt_3': count_gt_3.to_dict('records')
+}
+
+# Save the report to a CSV file
+report_df = pd.DataFrame({
+    'missing_ids': pd.Series(report['missing_ids']),
+    'count_mismatch': pd.Series([str(record) for record in report['count_mismatch']]),
+    'count_gt_3': pd.Series([str(record) for record in report['count_gt_3']])
+})
+report_df.to_csv('report.csv', index=False)
+
+print("Report generated and saved to 'report.csv'")

@@ -7,13 +7,15 @@ data = pd.read_csv('your_file.csv')
 missing_ids = []
 mismatched_street_entities = []
 missing_price_types = []
+extra_entries_mysql = []
 
-# Create a DataFrame for easy searching
+# Create DataFrames for easy searching
+sybase_data = data[['sybase_id', 'sybase_streetEntity', 'sybase_priceType']].drop_duplicates()
 mysql_data = data[['mysql_id', 'mysql_streetEntity', 'mysql_priceType']].drop_duplicates()
 
 # Check for missing IDs and mismatches
-for sybase_id in data['sybase_id'].unique():
-    sybase_rows = data[data['sybase_id'] == sybase_id]
+for sybase_id in sybase_data['sybase_id'].unique():
+    sybase_rows = sybase_data[sybase_data['sybase_id'] == sybase_id]
     corresponding_mysql_rows = mysql_data[mysql_data['mysql_id'] == sybase_id]
 
     if corresponding_mysql_rows.empty:
@@ -46,15 +48,46 @@ for sybase_id in data['sybase_id'].unique():
                         'missing_price_type': sybase_price_type
                     })
 
+# Check for extra entries in MySQL
+for mysql_id in mysql_data['mysql_id'].unique():
+    mysql_rows = mysql_data[mysql_data['mysql_id'] == mysql_id]
+    corresponding_sybase_rows = sybase_data[sybase_data['sybase_id'] == mysql_id]
+
+    if corresponding_sybase_rows.empty:
+        for _, row in mysql_rows.iterrows():
+            extra_entries_mysql.append({
+                'mysql_id': mysql_id,
+                'mysql_streetEntity': row['mysql_streetEntity'],
+                'mysql_priceType': row['mysql_priceType']
+            })
+    else:
+        for _, mysql_row in mysql_rows.iterrows():
+            mysql_street_entity = mysql_row['mysql_streetEntity']
+            mysql_price_type = mysql_row['mysql_priceType']
+
+            sybase_match = corresponding_sybase_rows[
+                (corresponding_sybase_rows['sybase_streetEntity'] == mysql_street_entity) &
+                (corresponding_sybase_rows['sybase_priceType'] == mysql_price_type)
+            ]
+
+            if sybase_match.empty:
+                extra_entries_mysql.append({
+                    'mysql_id': mysql_id,
+                    'mysql_streetEntity': mysql_street_entity,
+                    'mysql_priceType': mysql_price_type
+                })
+
 # Create DataFrames for each report section
 missing_ids_df = pd.DataFrame(missing_ids, columns=['missing_ids'])
 mismatched_street_entities_df = pd.DataFrame(mismatched_street_entities)
 missing_price_types_df = pd.DataFrame(missing_price_types)
+extra_entries_mysql_df = pd.DataFrame(extra_entries_mysql)
 
 # Save the report to an Excel file with multiple sheets
 with pd.ExcelWriter('report.xlsx') as writer:
     missing_ids_df.to_excel(writer, sheet_name='Missing IDs', index=False)
     mismatched_street_entities_df.to_excel(writer, sheet_name='Mismatched Street Entities', index=False)
     missing_price_types_df.to_excel(writer, sheet_name='Missing Price Types', index=False)
+    extra_entries_mysql_df.to_excel(writer, sheet_name='Extra Entries in MySQL', index=False)
 
 print("Report generated and saved to 'report.xlsx'")

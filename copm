@@ -1,0 +1,36 @@
+import pandas as pd
+
+def compare_and_report(csv_file):
+    # Read the CSV file
+    df = pd.read_csv(csv_file)
+
+    # Initialize a list to hold the report
+    report = []
+
+    # Iterate through each row in the dataframe
+    for index, row in df.iterrows():
+        sybase_id = row['sybase_id']
+        sybase_ric = row['sybase_ric']
+        id_val = row['id']
+        ric = row['ric']
+
+        # Check if sybase_id is present in the id column
+        if sybase_id not in df['id'].values:
+            # If not present, add all four fields to the report with category "ID Missing"
+            report.append({**row.to_dict(), 'Category': 'ID Missing'})
+        else:
+            # If present, check if sybase_ric matches with ric
+            if sybase_ric != ric:
+                # If not matching, add all four fields to the report with category "RIC Not Matching"
+                report.append({**row.to_dict(), 'Category': 'RIC Not Matching'})
+
+    # Convert the report list to a dataframe
+    report_df = pd.DataFrame(report)
+
+    # Save the report to a CSV file
+    report_df.to_csv('report.csv', index=False)
+
+    print("Report generated successfully: report.csv")
+
+# Usage example
+compare_and_report('input.csv')

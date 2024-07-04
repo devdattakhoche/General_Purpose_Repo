@@ -1,42 +1,42 @@
-import sys
+import pandas as pd
 
-# Function to parse a line from the input file and generate SQL insert statement
-def parse_line_to_sql(line):
-    # Splitting line by ';' to get values
-    values = line.strip().split(';')
-    
-    # Handling the case where values might be missing or empty
-    # If fewer than 13 values provided, we need to insert NULL for the missing values
-    if len(values) < 13:
-        values.extend(['NULL'] * (13 - len(values)))
-    
-    # Formatting SQL insert statement
-    sql = "INSERT INTO your_table_name (column1, column2, ..., column13) VALUES ({}, '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}');".format(
-        values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8], values[9], values[10], values[11], values[12]
-    )
-    
-    return sql
+def compare_and_report(csv_file):
+    # Read the CSV file
+    df = pd.read_csv(csv_file)
 
-# Main function to read from input file and write generated SQL statements to output file
-def main(input_file, output_file):
-    try:
-        with open(input_file, 'r') as f:
-            with open(output_file, 'w') as out:
-                for line in f:
-                    sql = parse_line_to_sql(line)
-                    out.write(sql + '\n')  # Writing SQL statement to output file
+    # Initialize lists to hold the ID missing and RIC not matching reports
+    id_missing_report = []
+    ric_not_matching_report = []
+
+    # Iterate through each row in the dataframe
+    for index, row in df.iterrows():
+        sybase_id = row['sybase_id']
+        sybase_ric = row['sybase_ric']
+        ric = row['ric']
+
+        # Check if sybase_id is present in the id column
+        matching_rows = df[df['id'] == sybase_id]
+        if matching_rows.empty:
+            # If not present, add all four fields to the ID missing report
+            id_missing_report.append(row.to_dict())
+        else:
+            # If present, check if sybase_ric matches with ric
+            for _, matching_row in matching_rows.iterrows():
+                if sybase_ric != matching_row['ric']:
+                    # If not matching, add all four fields to the RIC not matching report
+                    ric_not_matching_report.append(row.to_dict())
+
+    # Write the reports to a text file
+    with open('report.txt', 'w') as f:
+        f.write("ID Missing:\n")
+        for item in id_missing_report:
+            f.write(f"{item}\n")
         
-        print(f"SQL insert statements written to {output_file}")
-        
-    except IOError as e:
-        print(f"Error opening or writing to files: {e}")
+        f.write("\nRIC Not Matching:\n")
+        for item in ric_not_matching_report:
+            f.write(f"{item}\n")
+    
+    print("Report generated successfully: report.txt")
 
-if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("Usage: python script.py input_file output_file")
-        sys.exit(1)
-    
-    input_file = sys.argv[1]
-    output_file = sys.argv[2]
-    
-    main(input_file, output_file)
+# Usage example
+compare_and_report('input.csv')

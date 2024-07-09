@@ -1,93 +1,20 @@
-import pandas as pd
+Subject: Invitation to Extend Your Project for Our Upcoming Hackathon
 
-# Load the CSV file
-data = pd.read_csv('your_file.csv')
+Dear Namira Patel,
 
-# Initialize lists to store the report details
-missing_ids = []
-mismatched_street_entities = []
-missing_price_types = []
-extra_entries_mysql = []
+I hope this email finds you well. My name is [Your Name], and I am part of the organizing team for the upcoming [Name of Hackathon].
 
-# Create DataFrames for easy searching
-sybase_data = data[['sybase_id', 'sybase_streetEntity', 'sybase_priceType']].drop_duplicates()
-mysql_data = data[['mysql_id', 'mysql_streetEntity', 'mysql_priceType']].drop_duplicates()
+We were highly impressed with your project that was presented at the Global Hackathon, where it reached the top 10. Given its innovative approach and the impact it demonstrated, we believe it would be an excellent fit for our event.
 
-# Check for missing IDs and mismatches
-for sybase_id in sybase_data['sybase_id'].unique():
-    sybase_rows = sybase_data[sybase_data['sybase_id'] == sybase_id]
-    corresponding_mysql_rows = mysql_data[mysql_data['mysql_id'] == sybase_id]
+We would like to invite you to extend your project as one of the problem statements for our hackathon. Your project could serve as an inspiring challenge for participants, encouraging them to build upon your work and explore new solutions.
 
-    if corresponding_mysql_rows.empty:
-        missing_ids.append(sybase_id)
-    else:
-        for _, sybase_row in sybase_rows.iterrows():
-            sybase_street_entity = sybase_row['sybase_streetEntity']
-            sybase_price_type = sybase_row['sybase_priceType']
+Please let us know if you would be interested in this opportunity. We would be delighted to discuss further details and how we can support you in this endeavor.
 
-            mysql_match = corresponding_mysql_rows[
-                (corresponding_mysql_rows['mysql_streetEntity'] == sybase_street_entity) &
-                (corresponding_mysql_rows['mysql_priceType'] == sybase_price_type)
-            ]
+Thank you for considering our request. We look forward to your positive response.
 
-            if mysql_match.empty:
-                street_mismatch = corresponding_mysql_rows[
-                    corresponding_mysql_rows['mysql_priceType'] == sybase_price_type
-                ]
-                if not street_mismatch.empty:
-                    for _, row in street_mismatch.iterrows():
-                        mismatched_street_entities.append({
-                            'id': sybase_id,
-                            'sybase_streetEntity': sybase_street_entity,
-                            'mysql_streetEntity': row['mysql_streetEntity'],
-                            'price_type': sybase_price_type
-                        })
-                else:
-                    missing_price_types.append({
-                        'id': sybase_id,
-                        'missing_price_type': sybase_price_type
-                    })
+Best regards,
 
-# Check for extra entries in MySQL
-for mysql_id in mysql_data['mysql_id'].unique():
-    mysql_rows = mysql_data[mysql_data['mysql_id'] == mysql_id]
-    corresponding_sybase_rows = sybase_data[sybase_data['sybase_id'] == mysql_id]
-
-    if corresponding_sybase_rows.empty:
-        for _, row in mysql_rows.iterrows():
-            extra_entries_mysql.append({
-                'mysql_id': mysql_id,
-                'mysql_streetEntity': row['mysql_streetEntity'],
-                'mysql_priceType': row['mysql_priceType']
-            })
-    else:
-        for _, mysql_row in mysql_rows.iterrows():
-            mysql_street_entity = mysql_row['mysql_streetEntity']
-            mysql_price_type = mysql_row['mysql_priceType']
-
-            sybase_match = corresponding_sybase_rows[
-                (corresponding_sybase_rows['sybase_streetEntity'] == mysql_street_entity) &
-                (corresponding_sybase_rows['sybase_priceType'] == mysql_price_type)
-            ]
-
-            if sybase_match.empty:
-                extra_entries_mysql.append({
-                    'mysql_id': mysql_id,
-                    'mysql_streetEntity': mysql_street_entity,
-                    'mysql_priceType': mysql_price_type
-                })
-
-# Create DataFrames for each report section
-missing_ids_df = pd.DataFrame(missing_ids, columns=['missing_ids'])
-mismatched_street_entities_df = pd.DataFrame(mismatched_street_entities)
-missing_price_types_df = pd.DataFrame(missing_price_types)
-extra_entries_mysql_df = pd.DataFrame(extra_entries_mysql)
-
-# Save the report to an Excel file with multiple sheets
-with pd.ExcelWriter('report.xlsx') as writer:
-    missing_ids_df.to_excel(writer, sheet_name='Missing IDs', index=False)
-    mismatched_street_entities_df.to_excel(writer, sheet_name='Mismatched Street Entities', index=False)
-    missing_price_types_df.to_excel(writer, sheet_name='Missing Price Types', index=False)
-    extra_entries_mysql_df.to_excel(writer, sheet_name='Extra Entries in MySQL', index=False)
-
-print("Report generated and saved to 'report.xlsx'")
+[Your Full Name]
+[Your Position]
+[Hackathon Name]
+[Contact Information]

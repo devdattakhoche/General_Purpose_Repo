@@ -2,36 +2,59 @@ DELIMITER //
 
 CREATE PROCEDURE reference.cursor_example()
 BEGIN
-    DECLARE done INT DEFAULT 0;
-    DECLARE id VARCHAR(100);
-    DECLARE get_grips_row CURSOR FOR 
-        SELECT exchangeIds
-        FROM reference.grips_data_raw 
-        WHERE flowType IN ('DMA', 'ALL', 'HIGH_TOUCH', 'NO_TOUCH') 
-          AND productType IN ('SWAP','PNOTE');
-    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = 1;
+    DECLARE done_outer INT DEFAULT 0;
+    DECLARE done_inner INT DEFAULT 0;
+    DECLARE outer_id VARCHAR(100);
+    DECLARE inner_id VARCHAR(100);
 
-    -- Drop the temporary table if it already exists
-    DROP TEMPORARY TABLE IF EXISTS `#tempSplitExchangeIds`;
+    -- Outer cursor declaration
+    DECLARE outer_cursor CURSOR FOR
+    SELECT outer_column
+    FROM outer_table;
 
-    -- Create the temporary table
-    CREATE TEMPORARY TABLE `#tempSplitExchangeIds` (
-        exchangeId VARCHAR(20) NULL
-    );
+    -- Inner cursor declaration
+    DECLARE inner_cursor CURSOR FOR
+    SELECT inner_column
+    FROM inner_table
+    WHERE outer_column_id = outer_id;
 
-    OPEN get_grips_row;
+    -- Handlers for outer and inner cursors
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done_outer = 1;
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done_inner = 1;
 
-    read_loop: LOOP
-        FETCH get_grips_row INTO id;
-        IF done THEN
-            LEAVE read_loop;
+    -- Open outer cursor
+    OPEN outer_cursor;
+
+    -- Outer loop
+    outer_loop: LOOP
+        FETCH outer_cursor INTO outer_id;
+        IF done_outer THEN
+            LEAVE outer_loop;
         END IF;
 
-        -- Insert the id into the temporary table
-        INSERT INTO `#tempSplitExchangeIds` (exchangeId) VALUES (id);
-    END LOOP;
+        -- Open inner cursor
+        OPEN inner_cursor;
 
-    CLOSE get_grips_row;
+        -- Inner loop
+        inner_loop: LOOP
+            FETCH inner_cursor INTO inner_id;
+            IF done_inner THEN
+                LEAVE inner_loop;
+            END IF;
+
+            -- Process inner_id (e.g., insert into a temporary table)
+            INSERT INTO temp_results (outer_id, inner_id) VALUES (outer_id, inner_id);
+
+        END LOOP; -- End of inner loop
+
+        -- Close inner cursor
+        CLOSE inner_cursor;
+
+    END LOOP; -- End of outer loop
+
+    -- Close outer cursor
+    CLOSE outer_cursor;
+
 END//
 
 DELIMITER ;

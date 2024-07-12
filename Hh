@@ -1,42 +1,22 @@
-import pandas as pd
 
-def compare_and_report(csv_file):
-    # Read the CSV file
-    df = pd.read_csv(csv_file)
+DELIMITER //
+CREATE PROCEDURE cursor_example()
+BEGIN
+    DECLARE done INT DEFAULT 0;
+    DECLARE id INT;
+    DECLARE cursor_example CURSOR FOR SELECT id FROM your_table;
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = 1;
 
-    # Initialize lists to hold the ID missing and RIC not matching reports
-    id_missing_report = []
-    ric_not_matching_report = []
+    OPEN cursor_example;
 
-    # Iterate through each row in the dataframe
-    for index, row in df.iterrows():
-        sybase_id = row['sybase_id']
-        sybase_ric = row['sybase_ric']
-        ric = row['ric']
+    WHILE done = 0 DO
+        FETCH cursor_example INTO id;
+        IF NOT done THEN
+            -- do something with the id variable
+            INSERT INTO another_table (id) VALUES (id);
+        END IF;
+    END WHILE;
 
-        # Check if sybase_id is present in the id column
-        matching_rows = df[df['id'] == sybase_id]
-        if matching_rows.empty:
-            # If not present, add all four fields to the ID missing report
-            id_missing_report.append(row.to_dict())
-        else:
-            # If present, check if sybase_ric matches with ric
-            for _, matching_row in matching_rows.iterrows():
-                if sybase_ric != matching_row['ric']:
-                    # If not matching, add all four fields to the RIC not matching report
-                    ric_not_matching_report.append(row.to_dict())
-
-    # Write the reports to a text file
-    with open('report.txt', 'w') as f:
-        f.write("ID Missing:\n")
-        for item in id_missing_report:
-            f.write(f"{item}\n")
-        
-        f.write("\nRIC Not Matching:\n")
-        for item in ric_not_matching_report:
-            f.write(f"{item}\n")
-    
-    print("Report generated successfully: report.txt")
-
-# Usage example
-compare_and_report('input.csv')
+    CLOSE cursor_example;
+END//
+DELIMITER ;

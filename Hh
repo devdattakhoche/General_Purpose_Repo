@@ -1,25 +1,37 @@
 DELIMITER //
+
 CREATE PROCEDURE reference.cursor_example()
 BEGIN
     DECLARE done INT DEFAULT 0;
-    DECLARE id VARCHAR (100);
-	declare get_grips_row cursor for
-	select exchangeIds
-	from reference.grips_data_raw where flowType in ('DMA', 'ALL', 'HIGH_TOUCH', 'NO_TOUCH') and productType in ('SWAP','PNOTE');
-    CREATE TEMPORARY TABLE `#tempSplitExchangeIds`
-        (exchangeId VARCHAR (20) NULL);
+    DECLARE id VARCHAR(100);
+    DECLARE get_grips_row CURSOR FOR 
+        SELECT exchangeIds
+        FROM reference.grips_data_raw 
+        WHERE flowType IN ('DMA', 'ALL', 'HIGH_TOUCH', 'NO_TOUCH') 
+          AND productType IN ('SWAP','PNOTE');
     DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = 1;
-	
+
+    -- Drop the temporary table if it already exists
+    DROP TEMPORARY TABLE IF EXISTS `#tempSplitExchangeIds`;
+
+    -- Create the temporary table
+    CREATE TEMPORARY TABLE `#tempSplitExchangeIds` (
+        exchangeId VARCHAR(20) NULL
+    );
+
     OPEN get_grips_row;
 
-    WHILE done = 0 DO
+    read_loop: LOOP
         FETCH get_grips_row INTO id;
-        IF NOT done THEN
-            -- do something with the id variable
-            INSERT INTO `#tempSplitExchangeIds` (id) VALUES (id);
+        IF done THEN
+            LEAVE read_loop;
         END IF;
-    END WHILE;
+
+        -- Insert the id into the temporary table
+        INSERT INTO `#tempSplitExchangeIds` (exchangeId) VALUES (id);
+    END LOOP;
 
     CLOSE get_grips_row;
 END//
+
 DELIMITER ;

@@ -88,16 +88,30 @@ call reference.sp_log_message('sp_process_grips_data',var_print_string);
 ITERATE outer_loop;
 END IF;
 
-SELECT
-    CONCAT_WS('', 'update reference..client_preference set pref_value = "', var_existing_pref_value, '" where cass_id = ', CASE CAST(par_cass_id AS CHAR (10)) WHEN '' THEN ' ' ELSE CAST(par_cass_id AS CHAR (10)) END, ' and country_code ="', par_country_code, '" and pref_type = "', par_pref_type, '" and flow_type = "', par_flow_type, '" and comp_id = null and sub_cass_id = ', var_sub_cass_id_str_b, ' and exec_region = "', var_cosmos_region, '" and business_unit = "', par_business_unit, '" and exchange = "', par_exchangeId, '" and client_mnemonic="', par_account_mnemonic, '"')
-INTO var_print_string;
-call reference.sp_log_message('sp_process_grips_data',var_print_string);
+SELECT CONCAT_WS('', 
+'Outer Loop where cass_id = ', CASE WHEN var_cass_id IS NULL THEN 'NULL' ELSE CAST(var_cass_id AS CHAR(10)) END, 
+' and country_code = "', var_countryCode, 
+'" and long_book_id = "', var_longBookId, 
+'" and short_book_id = "', var_shortBookId, 
+'" and long_etf_book_id = "', var_longEtfBookId, 
+'" and short_etf_book_id = "', var_shortEtfBookId, 
+'" and wash_book_id = "', var_washBookId, 
+'" and client_book_id = "', var_clientBookId, 
+'" and client_trading_unit = "', var_clientTradingUnit, 
+'" and client_account_mnemonic = "', var_clientAccountMnemonic, 
+'" and flow_type = "', var_flowType, 
+'" and product_type = "', var_productType, 
+'" and grips_exchange_ids = "', var_gripsExchangeIds, 
+'"'
+	) INTO var_print_string;
+
+CALL reference.sp_log_message('sp_process_grips_data', var_print_string);
+
         -- Process based on countryCode
         IF (var_countryCode = 'CN') THEN
             -- Example modification to var_gripsExchangeIds
             IF (LOCATE('[', var_gripsExchangeIds) > 0) THEN
 SELECT SUBSTRING(var_gripsExchangeIds, LOCATE('[', var_gripsExchangeIds) + 1, LOCATE(']', var_gripsExchangeIds) - 2) INTO var_gripsExchangeIds;
-call reference.sp_log_message('sp_process_grips_data',var_gripsExchangeIds);
 END IF;
 
             -- Splitting var_gripsExchangeIds

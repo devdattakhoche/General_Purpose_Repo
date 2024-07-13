@@ -1,1 +1,15 @@
-IN par_cass_id INT, IN par_sub_cass_id INT, IN par_country_code VARCHAR(10), IN par_exchangeId VARCHAR(20), IN par_pref_type VARCHAR(10), IN par_pref_value VARCHAR(32), IN par_flow_type VARCHAR(10), IN par_convert_book BIT, IN par_account_mnemonic VARCHAR(32), IN par_business_unit VARCHAR(10), IN par_delete_missing BIT, IN par_rdt_on INT
+SELECT CONCAT_WS('',
+    'Outer Loop where par_cass_id = ', CASE WHEN par_cass_id IS NULL THEN 'NULL' ELSE CAST(par_cass_id AS CHAR(10)) END,
+    ' and par_sub_cass_id = ', CASE WHEN par_sub_cass_id IS NULL THEN 'NULL' ELSE CAST(par_sub_cass_id AS CHAR(10)) END,
+    ' and par_country_code = "', par_country_code,
+    '" and par_exchangeId = "', par_exchangeId,
+    '" and par_pref_type = "', par_pref_type,
+    '" and par_pref_value = "', par_pref_value,
+    '" and par_flow_type = "', par_flow_type,
+    '" and par_convert_book = ', CASE WHEN par_convert_book IS NULL THEN 'NULL' ELSE CAST(par_convert_book AS CHAR(10)) END,
+    ' and par_account_mnemonic = "', par_account_mnemonic,
+    '" and par_business_unit = "', par_business_unit,
+    '" and par_delete_missing = ', CASE WHEN par_delete_missing IS NULL THEN 'NULL' ELSE CAST(par_delete_missing AS CHAR(10)) END,
+    ' and par_rdt_on = ', CASE WHEN par_rdt_on IS NULL THEN 'NULL' ELSE CAST(par_rdt_on AS CHAR(10)) END,
+    '"'
+) INTO var_print_string;

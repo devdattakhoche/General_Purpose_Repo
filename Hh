@@ -1,87 +1,66 @@
 USE static_data
-go
+GO
 
-IF OBJECT_ID('dbo.EMEA_PPS_TO_RIC_SQL') IS NOT NULL
+CREATE PROCEDURE dbo.EMEA_PPS_TO_RIC_SQL
+AS 
 BEGIN
-    DROP PROCEDURE dbo.EMEA_PPS_TO_RIC_SQL
-    IF OBJECT_ID('dbo.EMEA_PPS_TO_RIC_SQL') IS NOT NULL
-        PRINT '=== FAILED DROPPING PROCEDURE dbo.EMEA_PPS_TO_RIC_SQL ==='
-    ELSE
-        PRINT '=== DROPPED PROCEDURE dbo.EMEA_PPS_TO_RIC_SQL ==='
+    -- Create the temporary table within the stored procedure scope
+    CREATE TABLE #jpmPostTradeID2RicMapping (
+        jpm_post_trade_id VARCHAR(255),
+        ric VARCHAR(255),
+        is_primary INT,
+        is_global_primary INT,
+        is_primary_jpm_post_trade_id INT
+    )
+
+    -- Insert data into the temporary table
+    INSERT INTO #jpmPostTradeID2RicMapping (jpm_post_trade_id, ric, is_primary, is_global_primary, is_primary_jpm_post_trade_id)
+    SELECT DISTINCT
+           map.jpm_post_trade_id,
+           map.ric,
+           map.is_primary,
+           map.is_global_primary,
+           map.is_primary_jpm_post_trade_id
+    FROM product..GEM_imnt_security_map map
+    WHERE map.ric IS NOT NULL 
+      AND map.ind_active = 'Y'
+      AND (map.is_primary_jpm_post_trade_id = 1
+           OR map.is_global_primary = 1 
+           OR map.is_primary = 1)
+      AND RTRIM(map.jpm_post_trade_id) IS NOT NULL
+      AND map.cntry_code IN (SELECT id_ctry_std 
+                             FROM static_data..COUNTRY_BY_REGION 
+                             WHERE id_region_key IN ('EU', 'EM', 'ZA'))
+
+    -- Create index on jpm_post_trade_id column
+    CREATE INDEX #jpmPostTradeID2RicMapping_i1 ON #jpmPostTradeID2RicMapping(jpm_post_trade_id)
+
+    -- Remove duplicates based on specific conditions
+    DELETE a
+    FROM #jpmPostTradeID2RicMapping a, #jpmPostTradeID2RicMapping b 
+    WHERE a.jpm_post_trade_id = b.jpm_post_trade_id
+      AND a.is_primary_jpm_post_trade_id != 1
+      AND b.is_primary_jpm_post_trade_id = 1
+
+    DELETE a
+    FROM #jpmPostTradeID2RicMapping a, #jpmPostTradeID2RicMapping b 
+    WHERE a.jpm_post_trade_id = b.jpm_post_trade_id
+      AND a.is_primary_jpm_post_trade_id != 1
+      AND a.is_global_primary != 1
+      AND b.is_global_primary = 1
+
+    -- Truncate existing data in target table
+    TRUNCATE TABLE static_data..jpmPostTradeID
+
+    -- Insert into target table
+    INSERT INTO static_data..jpmPostTradeID (jpm_post_trade_id, ric)
+    SELECT jpm_post_trade_id, ric
+    FROM #jpmPostTradeID2RicMapping
+
+    -- Select final results
+    SELECT jpm_post_trade_id, ric
+    FROM static_data..jpmPostTradeID
+
+    -- Drop the temporary table at the end of the procedure
+    DROP TABLE #jpmPostTradeID2RicMapping
 END
-go
-
-create procedure dbo.EMEA_PPS_TO_RIC_SQL
-as BEGIN
-
-IF OBJECT_ID('#jpmPostTradeID2RicMapping') IS NOT NULL
-BEGIN
-    drop table #jpmPostTradeID2RicMapping
-END
-
-select DISTINCT
-       map.jpm_post_trade_id,
-       map.ric,
-       map.is_primary,
-       map.is_global_primary,
-       map.is_primary_jpm_post_trade_id
-  into #jpmPostTradeID2RicMapping     
-  from product..GEM_imnt_security_map map
-where map.ric != null 
-   and map.ind_active = 'Y'
-   and (map.is_primary_jpm_post_trade_id = 1
-    or map.is_global_primary = 1 
-    or map.is_primary = 1)
-   and rtrim(map.jpm_post_trade_id) != null
-   and map.cntry_code in (select id_ctry_std from static_data..COUNTRY_BY_REGION 
-                           where id_region_key in ('EU', 'EM', 'ZA'))
- 
-create index #jpmPostTradeID2RicMapping_i1 on #jpmPostTradeID2RicMapping(jpm_post_trade_id)
- 
-delete #jpmPostTradeID2RicMapping 
-  from #jpmPostTradeID2RicMapping a,
-       #jpmPostTradeID2RicMapping b 
-where a.jpm_post_trade_id = b.jpm_post_trade_id
-   and a.is_primary_jpm_post_trade_id != 1
-   and b.is_primary_jpm_post_trade_id = 1
- 
-delete #jpmPostTradeID2RicMapping 
-  from #jpmPostTradeID2RicMapping a,
-       #jpmPostTradeID2RicMapping b 
-where a.jpm_post_trade_id = b.jpm_post_trade_id
-   and a.is_primary_jpm_post_trade_id != 1
-   and a.is_global_primary != 1
-   and b.is_global_primary = 1
- 
-   truncate table static_data..jpmPostTradeID
-   
-
-INSERT INTO static_data..jpmPostTradeID (jpm_post_trade_id, ric)
-SELECT jpm_post_trade_id, ric
-FROM #jpmPostTradeID2RICMapping
-
-select jpm_post_trade_id,
-       ric
-  from static_data..jpmPostTradeID
-  
-end 
-
-EXEC sp_procxmode 'dbo.EMEA_PPS_TO_RIC_SQL', 'anymode'
-go
-
-IF OBJECT_ID('dbo.EMEA_PPS_TO_RIC_SQL') IS NOT NULL
-    PRINT '<<< CREATED PROCEDURE dbo.EMEA_PPS_TO_RIC_SQL >>>'
-ELSE
-    PRINT '<<< FAILED CREATING PROCEDURE dbo.EMEA_PPS_TO_RIC_SQL >>>'
-go
-
-REVOKE EXECUTE ON dbo.EMEA_PPS_TO_RIC_SQL TO public
-go
-
-REVOKE EXECUTE ON dbo.EMEA_PPS_TO_RIC_SQL TO strideapp_rw
-go
-
-GRANT EXECUTE ON dbo.EMEA_PPS_TO_RIC_SQL TO strideapp_rw
-go
-
-

@@ -1,60 +1,13 @@
-DELIMITER //
-
-CREATE PROCEDURE reference.cursor_example()
+-- Check if table exists and create if it doesn't
+IF NOT EXISTS (SELECT 1 FROM sysobjects WHERE name = 'YourTableName' AND type = 'U')
 BEGIN
-    DECLARE done_outer INT DEFAULT 0;
-    DECLARE done_inner INT DEFAULT 0;
-    DECLARE outer_id VARCHAR(100);
-    DECLARE inner_id VARCHAR(100);
+    CREATE TABLE YourTableName (
+        jpm_post_trade_id VARCHAR(255), -- Adjust data type and length as needed
+        ric VARCHAR(255)               -- Adjust data type and length as needed
+    )
+END
 
-    -- Outer cursor declaration
-    DECLARE outer_cursor CURSOR FOR
-    SELECT outer_column
-    FROM outer_table;
-
-    -- Inner cursor declaration
-    DECLARE inner_cursor CURSOR FOR
-    SELECT inner_column
-    FROM inner_table
-    WHERE outer_column_id = outer_id;
-
-    -- Handlers for outer and inner cursors
-    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done_outer = 1;
-    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done_inner = 1;
-
-    -- Open outer cursor
-    OPEN outer_cursor;
-
-    -- Outer loop
-    outer_loop: LOOP
-        FETCH outer_cursor INTO outer_id;
-        IF done_outer THEN
-            LEAVE outer_loop;
-        END IF;
-
-        -- Open inner cursor
-        OPEN inner_cursor;
-
-        -- Inner loop
-        inner_loop: LOOP
-            FETCH inner_cursor INTO inner_id;
-            IF done_inner THEN
-                LEAVE inner_loop;
-            END IF;
-
-            -- Process inner_id (e.g., insert into a temporary table)
-            INSERT INTO temp_results (outer_id, inner_id) VALUES (outer_id, inner_id);
-
-        END LOOP; -- End of inner loop
-
-        -- Close inner cursor
-        CLOSE inner_cursor;
-
-    END LOOP; -- End of outer loop
-
-    -- Close outer cursor
-    CLOSE outer_cursor;
-
-END//
-
-DELIMITER ;
+-- Insert data from temporary table #jpmPostTradeID2RICMapping
+INSERT INTO YourTableName (jpm_post_trade_id, ric)
+SELECT jpm_post_trade_id, ric
+FROM #jpmPostTradeID2RICMapping

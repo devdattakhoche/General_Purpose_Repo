@@ -1,13 +1,87 @@
--- Check if table exists and create if it doesn't
-IF NOT EXISTS (SELECT 1 FROM sysobjects WHERE name = 'YourTableName' AND type = 'U')
+USE static_data
+go
+
+IF OBJECT_ID('dbo.EMEA_PPS_TO_RIC_SQL') IS NOT NULL
 BEGIN
-    CREATE TABLE YourTableName (
-        jpm_post_trade_id VARCHAR(255), -- Adjust data type and length as needed
-        ric VARCHAR(255)               -- Adjust data type and length as needed
-    )
+    DROP PROCEDURE dbo.EMEA_PPS_TO_RIC_SQL
+    IF OBJECT_ID('dbo.EMEA_PPS_TO_RIC_SQL') IS NOT NULL
+        PRINT '=== FAILED DROPPING PROCEDURE dbo.EMEA_PPS_TO_RIC_SQL ==='
+    ELSE
+        PRINT '=== DROPPED PROCEDURE dbo.EMEA_PPS_TO_RIC_SQL ==='
+END
+go
+
+create procedure dbo.EMEA_PPS_TO_RIC_SQL
+as BEGIN
+
+IF OBJECT_ID('#jpmPostTradeID2RicMapping') IS NOT NULL
+BEGIN
+    drop table #jpmPostTradeID2RicMapping
 END
 
--- Insert data from temporary table #jpmPostTradeID2RICMapping
-INSERT INTO YourTableName (jpm_post_trade_id, ric)
+select DISTINCT
+       map.jpm_post_trade_id,
+       map.ric,
+       map.is_primary,
+       map.is_global_primary,
+       map.is_primary_jpm_post_trade_id
+  into #jpmPostTradeID2RicMapping     
+  from product..GEM_imnt_security_map map
+where map.ric != null 
+   and map.ind_active = 'Y'
+   and (map.is_primary_jpm_post_trade_id = 1
+    or map.is_global_primary = 1 
+    or map.is_primary = 1)
+   and rtrim(map.jpm_post_trade_id) != null
+   and map.cntry_code in (select id_ctry_std from static_data..COUNTRY_BY_REGION 
+                           where id_region_key in ('EU', 'EM', 'ZA'))
+ 
+create index #jpmPostTradeID2RicMapping_i1 on #jpmPostTradeID2RicMapping(jpm_post_trade_id)
+ 
+delete #jpmPostTradeID2RicMapping 
+  from #jpmPostTradeID2RicMapping a,
+       #jpmPostTradeID2RicMapping b 
+where a.jpm_post_trade_id = b.jpm_post_trade_id
+   and a.is_primary_jpm_post_trade_id != 1
+   and b.is_primary_jpm_post_trade_id = 1
+ 
+delete #jpmPostTradeID2RicMapping 
+  from #jpmPostTradeID2RicMapping a,
+       #jpmPostTradeID2RicMapping b 
+where a.jpm_post_trade_id = b.jpm_post_trade_id
+   and a.is_primary_jpm_post_trade_id != 1
+   and a.is_global_primary != 1
+   and b.is_global_primary = 1
+ 
+   truncate table static_data..jpmPostTradeID
+   
+
+INSERT INTO static_data..jpmPostTradeID (jpm_post_trade_id, ric)
 SELECT jpm_post_trade_id, ric
 FROM #jpmPostTradeID2RICMapping
+
+select jpm_post_trade_id,
+       ric
+  from static_data..jpmPostTradeID
+  
+end 
+
+EXEC sp_procxmode 'dbo.EMEA_PPS_TO_RIC_SQL', 'anymode'
+go
+
+IF OBJECT_ID('dbo.EMEA_PPS_TO_RIC_SQL') IS NOT NULL
+    PRINT '<<< CREATED PROCEDURE dbo.EMEA_PPS_TO_RIC_SQL >>>'
+ELSE
+    PRINT '<<< FAILED CREATING PROCEDURE dbo.EMEA_PPS_TO_RIC_SQL >>>'
+go
+
+REVOKE EXECUTE ON dbo.EMEA_PPS_TO_RIC_SQL TO public
+go
+
+REVOKE EXECUTE ON dbo.EMEA_PPS_TO_RIC_SQL TO strideapp_rw
+go
+
+GRANT EXECUTE ON dbo.EMEA_PPS_TO_RIC_SQL TO strideapp_rw
+go
+
+

@@ -1,9 +1,33 @@
-event:periodic-event
-data:X3F0eQ==
+import requests
+import sseclient
+import base64
+import json
 
-event:periodic-event
-data:IEFT
+# URL of the SSE endpoint
+url = 'http://example.com/sse-endpoint'
 
-event:periodic-event
-data:ICc=
+# Make the request
+response = requests.get(url, stream=True)
 
+# Wrap the response with the sseclient library
+client = sseclient.SSEClient(response)
+
+# Process events as they arrive
+for event in client.events():
+    try:
+        print(f"Raw event data: {event.data}")
+        # Decode the Base64 data
+        decoded_data = base64.b64decode(event.data).decode('utf-8')
+        print(f"Decoded data: {decoded_data}")
+        # Assuming the decoded data is JSON
+        data = json.loads(decoded_data)
+        print("Parsed JSON data:", data)
+    except json.JSONDecodeError as e:
+        print(f"Failed to parse JSON: {e}")
+        continue
+    except base64.binascii.Error as e:
+        print(f"Failed to decode Base64: {e}")
+        continue
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        continue

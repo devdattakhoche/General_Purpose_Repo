@@ -41,7 +41,21 @@ def convert_file(content, filename, output_folder):
         print(response.status_code)
         print(f"API call failed for {filename}")
         return
-    
+    # Iterate over the response in chunks
+for chunk in response.iter_content(chunk_size=1024):
+    if chunk:
+        data += chunk.decode('utf-8')
+        try:
+            # Attempt to parse the JSON data
+            json_data = json.loads(data)
+            # Process the JSON data
+            print(json_data)
+            # Clear the data string after successfully processing the JSON
+            data = ""
+        except json.JSONDecodeError:
+            # If a JSONDecodeError occurs, it means we don't have a complete JSON object yet
+            pass
+
     sse_url = response.json().get('stream_url')
     if not sse_url:
         print("Stream URL not found in response.")

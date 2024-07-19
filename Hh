@@ -1,66 +1,95 @@
-USE static_data
-GO
+In retrospect, I am pleased to provide a comprehensive overview of my contributions to our organization's success over the past year. My responsibilities encompassed modernization efforts, the resolution of functional issues, and project management that extended beyond our regular business activities.
 
-CREATE PROCEDURE dbo.EMEA_PPS_TO_RIC_SQL
-AS 
-BEGIN
-    -- Create the temporary table within the stored procedure scope
-    CREATE TABLE #jpmPostTradeID2RicMapping (
-        jpm_post_trade_id VARCHAR(255),
-        ric VARCHAR(255),
-        is_primary INT,
-        is_global_primary INT,
-        is_primary_jpm_post_trade_id INT
-    )
+Ownership and Assumption of NextGen EMEA Server-Side Responsibility
 
-    -- Insert data into the temporary table
-    INSERT INTO #jpmPostTradeID2RicMapping (jpm_post_trade_id, ric, is_primary, is_global_primary, is_primary_jpm_post_trade_id)
-    SELECT DISTINCT
-           map.jpm_post_trade_id,
-           map.ric,
-           map.is_primary,
-           map.is_global_primary,
-           map.is_primary_jpm_post_trade_id
-    FROM product..GEM_imnt_security_map map
-    WHERE map.ric IS NOT NULL 
-      AND map.ind_active = 'Y'
-      AND (map.is_primary_jpm_post_trade_id = 1
-           OR map.is_global_primary = 1 
-           OR map.is_primary = 1)
-      AND RTRIM(map.jpm_post_trade_id) IS NOT NULL
-      AND map.cntry_code IN (SELECT id_ctry_std 
-                             FROM static_data..COUNTRY_BY_REGION 
-                             WHERE id_region_key IN ('EU', 'EM', 'ZA'))
+A significant aspect of my role was taking full ownership of server-side operations for NextGen EMEA, which took me around 9 months to do so.  This encompassed the prompt resolution of issues, proactive support for production environments, the implementation of new features, and meticulous oversight of migrations. I ensured that every task, regardless of its scale, was executed with unwavering attention to detail.
 
-    -- Create index on jpm_post_trade_id column
-    CREATE INDEX #jpmPostTradeID2RicMapping_i1 ON #jpmPostTradeID2RicMapping(jpm_post_trade_id)
+Multifaceted Contributions
 
-    -- Remove duplicates based on specific conditions
-    DELETE a
-    FROM #jpmPostTradeID2RicMapping a, #jpmPostTradeID2RicMapping b 
-    WHERE a.jpm_post_trade_id = b.jpm_post_trade_id
-      AND a.is_primary_jpm_post_trade_id != 1
-      AND b.is_primary_jpm_post_trade_id = 1
+In addition to my core responsibilities, I actively contributed to Greenlight (GL) and some NewGem action items. This highlights my commitment to a diverse range of responsibilities and initiatives throughout the organization.
 
-    DELETE a
-    FROM #jpmPostTradeID2RicMapping a, #jpmPostTradeID2RicMapping b 
-    WHERE a.jpm_post_trade_id = b.jpm_post_trade_id
-      AND a.is_primary_jpm_post_trade_id != 1
-      AND a.is_global_primary != 1
-      AND b.is_global_primary = 1
+AWS Solutions Architect Certification
 
-    -- Truncate existing data in target table
-    TRUNCATE TABLE static_data..jpmPostTradeID
+A noteworthy achievement during this period was the successful completion of the AWS Solutions Architect Associate certification. Importantly, this accomplishment did not disrupt my regular work responsibilities, further illustrating my dedication to professional development.
 
-    -- Insert into target table
-    INSERT INTO static_data..jpmPostTradeID (jpm_post_trade_id, ric)
-    SELECT jpm_post_trade_id, ric
-    FROM #jpmPostTradeID2RicMapping
+Modernization 
 
-    -- Select final results
-    SELECT jpm_post_trade_id, ric
-    FROM static_data..jpmPostTradeID
+AWS Migration
 
-    -- Drop the temporary table at the end of the procedure
-    DROP TABLE #jpmPostTradeID2RicMapping
-END
+I took full responsibility for the migration of NextGen EMEA from Sybase to Aurora MySQL, orchestrating a seamless transition without disruptions.
+The migration was meticulously planned and executed, ensuring a smooth shift without any significant production disruptions.
+Key milestones were achieved within specified timelines, including the migration of database schemas and stored procedures.
+In addition to database migration, I also oversaw the successful migration of stored procedures designed for reporting (GREP), contributing to system modernization.
+To preempt issues, I implemented proactive monitoring post-deployment.
+
+IDA Migration for NewGem
+
+I led the migration of the Pyxis Service from Janus to IDA, a critical step in the Janus decommission and IDA migration project.
+The Pyxis migration was executed without issues, with provisions for reverting to Janus in case of unforeseen complications.
+Furthermore, I contributed to the CRS IDA migration, with the changes ready for activation once downstream blockers are resolved.
+
+Technology Upgrades
+
+We strategically upgraded NextGen EMEA from Java 8 to Java 11 to align with the evolving technology landscape and facilitate the migration from AWS Sybase to Aurora MySQL.
+My role in the NextGen EMEA Cron to Watchdog migration significantly contributed to a successful transition.
+
+Functional Enhancements and Bug Resolution
+
+NextGen EMEA
+
+Key accomplishments included implementing the Saudi VP merge, streamlining Saudi Orders, and improving Account as MASTER downstream.
+Development of NextGen GMOC Commission reports for Agency and Principal orders was undertaken to meet the GMOC team's requirements.
+Contributions to NextGen EMEA for Cerd Corp Decom, population of commission tags for GMOC orders, and the resolution of regulatory and compliance issues were essential.
+An expedited fix was provided to allow NewGem basket names to exceed 64 characters.
+Other regulatory and complianace requirements.
+
+NewGem
+
+Managing certificate renewal and resolving UAT bugs and environment issues were integral to our responsibilities.
+Contributions to Greenlight in the first two quarters of the year underscored our dedication to multifaceted roles.
+
+Beyond BAU
+
+We automated Greenlight for NewGem, simplifying process deployment without the need for human intervention.
+
+
+In my role, a significant focus has been on ensuring the timely delivery of projects by effectively managing priorities and meeting business expectations regarding project schedules. This commitment to project management and business satisfaction has been at the forefront of my responsibilities.
+
+Business-Centric Approach
+I have actively practiced listening to our business requirements, deeply understanding the business purpose behind their requests, and translating those needs into software features. This approach ensures that our solutions are not only technically sound but also closely aligned with our business goals.
+
+Proactive Feedback Loop
+In collaboration with Team leads, Managers and Traders, I proactively sought and discussed the requirements and made sure that I am implementing and delivering exactly what is asked without any discrepancies.
+
+Handling Production Issues
+In addition to project development, I have actively taken part in addressing production issues related to the project. This includes promptly addressing any trader and operator queries. This approach creates a stakeholder-friendly environment where their concerns are promptly and effectively addressed, ensuring a smooth and trouble-free experience for all stakeholders.
+
+Rigorous Testing
+Quality assurance is a non-negotiable aspect of my work. I have diligently tested the features I develop to ensure that they meet the highest standards of reliability. Additionally, I've followed the practice of documenting in certain cases, creating a robust framework for maintaining quality.
+
+This client-centric and quality-driven approach has resulted in successful project deliveries and enhanced operate and trader satisfaction.
+
+My journey over the past year has been marked by active participation in various collaborative initiatives, contributing to my role as a team player and a leader. The power of teamwork has been a driving force behind my accomplishments. Below are some instances, I have tried to contribute to other 
+
+Deepracer Global Finalist from Mumbai: Being a Deepracer Global Finalist from Mumbai was an achievement that involved teamwork and dedication to reach such a prestigious milestone.
+
+Subject Matter Expert in CodeforGood: Serving as a subject matter expert in CodeforGood, I've had the privilege of sharing knowledge and expertise with my peers, fostering collaboration, and driving innovation.
+
+Mentor in Sepathon: In my role as a mentor during the Sepathon, I had the opportunity to guide and inspire others, contributing to the development of aspiring talents in the field.
+
+Volunteer in MTC Event: Volunteering at the MTC event allowed me to actively participate in a significant collaborative effort, contributing to its success.
+
+Performed as a Drummer in SEP Grad Event: Beyond my professional role, I also played a role as a drummer in the SEP Grad Event, demonstrating a commitment to team activities both inside and outside the workplace.
+
+Collaborative Approach
+Teamwork is a fundamental aspect of my work philosophy. I easily establish positive relationships with team members and ensure that they are informed about my work and its progress. This collaborative approach not only fosters effective communication but also creates opportunities for learning from senior team members.
+
+Effective Communication
+Effective communication with team members is of utmost importance to me. I place a strong emphasis on clear and respectful communication, ensuring that business requirements remain a top priority. I make it a habit to respond promptly and nurture positive relationships with my colleagues.
+
+In instances where I make errors or face challenges, I turn to the support and guidance of my teammates. I highly value their time and reach out for assistance only when I've reached an impasse or encounter particularly challenging tasks.
+
+Valuing In-Person Connection
+In a world increasingly defined by virtual interactions, I value in-person connections. I enjoy spending time with the team outside of work, as it strengthens our bonds and fosters a sense of camaraderie beyond the virtual realm.
+
+In summary, my commitment to teamwork and leadership is reflected in my active participation, effective collaboration, and a genuine appreciation for the value of team relationships. These qualities have not only contributed to my personal growth but also to the success of collaborative endeavors.

@@ -1,13 +1,9 @@
-for chunk in response.iter_content(chunk_size=1024):
-    if chunk:
-        data += chunk.decode('utf-8')
-        try:
-            # Attempt to parse the JSON data
-            json_data = json.loads(data)
-            # Process the JSON data
-            print(json_data)
-            # Clear the data string after successfully processing the JSON
-            data = ""
-        except json.JSONDecodeError:
-            # If a JSONDecodeError occurs, it means we don't have a complete JSON object yet
-            pass
+event:periodic-event
+data:X3F0eQ==
+
+event:periodic-event
+data:IEFT
+
+event:periodic-event
+data:ICc=
+

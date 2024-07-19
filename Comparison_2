@@ -1,20 +1,66 @@
-Subject: Invitation to Extend Your Project for Our Upcoming Hackathon
+import requests
+import json
+import os
 
-Dear Namira Patel,
+def convert_file(content, filename, output_folder):
+    url = "https://devgptexp.awmai.prod.aws.jpmchase.net/gdevgpt/v1/gpt_plugin/FALSE"
+    payload = json.dumps({
+        "model":"gpt-4o-2024-05-13",
+        "messages": [
+            {
+                "content":"You are an AI programming assistant.\nFollow the user's requirements carefully to the letter.\nYour responses should be informative and logical.\nYou should always adhere to technical information.\nIf the user asks for code or technical questions, you must provide code.\nIf the question is related to a developer, you must respond with content related to a developer.\nFirst think step-by-step - do not describe your plan , just give code output.\nThen output the code in a single code block.\nMinimize any other prose.\nKeep your answers short and impersonal.\nUse Markdown formatting in your answers.\nMake sure to include the programming language name at the start of the Markdown code blocks.\nAvoid wrapping the whole response in triple backticks.\nThe user works in an IDE built by JetBrains which has a concept for editors with open files, integrated unit test support, and output pane that shows the output of running the code as well as an integrated terminal.\nYou can only give one reply for each conversation turn turn.\n",
+                "role": "system"
+            },
+            {
+                "content": '''
+                Convert Stored Procedure from sybase to MSYQL, 
+                just give code output, 
+                instead of print use select. 
+                Also handle date conversions and joins correctly, 
+                here is the Stored procedure :\n'''+content,
+                "role": "user"
+            }
+        ],
+        "temperature": 0,
+        "top_p": 0,
+        "n": 1,
+        "stream": True,
+        "presence_penalty": 0,
+        "frequency_penalty": 0,
+        "projects": [],
+        "repos": ["projects"]
+    })
+    headers = {
+        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MzY3MTk1OTYsInVzZXJfaWQiOiJSNzIxNTcyIn0.d2HZH5_HCRScnWOCiShpmlkXw8f2yUQzgGqPY1KCsmc',
+        'Content-Type': 'application/json'
+    }
 
-I hope this email finds you well. My name is [Your Name], and I am part of the organizing team for the upcoming [Name of Hackathon].
+    response = requests.post(url, headers=headers, data=payload,stream=True, timeout=180)
+    if response.status_code != 200:
+        print(response.status_code)
+        print(f"API call failed for {filename}")
+        return
+    
+    response_json = response.json()
+    converted_content = response_json['choices'][0]['message']['content']
 
-We were highly impressed with your project that was presented at the Global Hackathon, where it reached the top 10. Given its innovative approach and the impact it demonstrated, we believe it would be an excellent fit for our event.
+    output_path = os.path.join(output_folder, filename)
+    with open(output_path, 'w') as file:
+        file.write(converted_content)
 
-We would like to invite you to extend your project as one of the problem statements for our hackathon. Your project could serve as an inspiring challenge for participants, encouraging them to build upon your work and explore new solutions.
+def main():
+    input_folder = 'sybase_sqls'
+    output_folder = 'converted'
 
-Please let us know if you would be interested in this opportunity. We would be delighted to discuss further details and how we can support you in this endeavor.
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
 
-Thank you for considering our request. We look forward to your positive response.
+    for filename in os.listdir(input_folder):
+        if filename.endswith('.sql'):
+            file_path = os.path.join(input_folder, filename)
+            with open(file_path, 'r') as file:
+                file_content = file.read()
+                convert_file(file_content, filename, output_folder)
 
-Best regards,
-
-[Your Full Name]
-[Your Position]
-[Hackathon Name]
-[Contact Information]
+if __name__ == '__main__':
+    main()

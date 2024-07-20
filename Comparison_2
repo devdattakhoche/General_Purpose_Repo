@@ -1,1 +1,108 @@
-urllib3.exceptions.LocationParseError: Failed to parse: <Response [200]>
+import requests
+import json
+import os
+from sseclient import SSEClient  # Assuming sseclient library is used for server-sent events
+
+def convert_file(content, filename, output_folder):
+    url = "https://devgptexp.awmai.prod.aws.jpmchase.net/gdevgpt/v1/gpt_plugin_stream/false?sse=True"
+    payload = json.dumps({
+        "model": "gpt-4o-2024-05-13",
+        "messages": [
+            {
+                "content": "You are an AI programming assistant.\nFollow the user's requirements carefully to the letter.\nYour responses should be informative and logical.\nYou should always adhere to technical information.\nIf the user asks for code or technical questions, you must provide code.\nIf the question is related to a developer, you must respond with content related to a developer.\nFirst think step-by-step - do not describe your plan , just give code output.\nThen output the code in a single code block.\nMinimize any other prose.\nKeep your answers short and impersonal.\nUse Markdown formatting in your answers.\nMake sure to include the programming language name at the start of the Markdown code blocks.\nAvoid wrapping the whole response in triple backticks.\nThe user works in an IDE built by JetBrains which has a concept for editors with open files, integrated unit test support, and output pane that shows the output of running the code as well as an integrated terminal.\nYou can only give one reply for each conversation turn turn.\n",
+                "role": "system"
+            },
+            {
+                "content": '''
+                Convert Stored Procedure from sybase to MSYQL, 
+                just give code output, 
+                instead of print use select. 
+                Also handle date conversions and joins correctly, 
+                here is the Stored procedure :\n''' + content,
+                "role": "user"
+            }
+        ],
+        "temperature": 0,
+        "top_p": 0,
+        "n": 1, 
+        "stream": False,
+        "presence_penalty": 0,
+        "frequency_penalty": 0,
+        "projects": [],
+        "repos": ["projects"]
+    })
+    headers = {
+        'Authorization': 'Bearer <>',
+        'Content-Type': 'application/json',
+        'Accept': 'text/event-stream'
+    }
+
+    # response = requests.post(url, headers=headers, data=payload, stream=True)
+    # # print(response.json())
+    # # response = requests.get(url, stream=True)
+
+    # # Wrap the response with the sseclient library
+    # client = SSEClient(response)
+    # for event in client.events():
+    #     try:
+    #         print(f"Raw event data: {event.data}")
+    #         # Decode the Base64 data
+    #         decoded_data = base64.b64decode(event.data).decode('utf-8')
+    #         print(f"Decoded data: {decoded_data}")
+    #         # Assuming the decoded data is JSON
+    #         data = json.loads(decoded_data)
+    #         print("Parsed JSON data:", data)
+    #     except json.JSONDecodeError as e:
+    #         print(f"Failed to parse JSON: {e}")
+    #         continue
+    #     except base64.binascii.Error as e:
+    #         print(f"Failed to decode Base64: {e}")
+    #         continue
+    #     except Exception as e:
+    #         print(f"An unexpected error occurred: {e}")
+    #         continue
+    #     # sse_url = response.json().get('stream_url')
+    # if not sse_url:
+    #     print("Stream URL not found in response.")
+    #     return
+    data = ''
+    for chunk in response.iter_content(chunk_size=1024):
+        if chunk:
+            data += chunk.decode('utf-8')
+            try:    
+                # Attempt to parse the JSON data
+                json_data = json.loads(data)
+                # Process the JSON data
+                print(json_data)
+                # Clear the data string after successfully processing the JSON
+                data = ""
+            except json.JSONDecodeError:
+                # If a JSONDecodeError occurs, it means we don't have a complete JSON object yet
+                pass
+
+    sse_client = SSEClient(response)
+    for event in sse_client.events():
+        print(event)
+        if event.event == 'message':
+            converted_content = json.loads(event.data)['choices'][0]['message']['content']
+            output_path = os.path.join(output_folder, filename)
+            with open(output_path, 'w') as file:
+                file.write(converted_content)
+            break  # Exit after processing the first event (assuming only one message is expected)
+
+def main():
+    input_folder = 'sybase_sqls'
+    output_folder = 'converted'
+
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
+    for filename in os.listdir(input_folder):
+        if filename.endswith('.sql'):
+            file_path = os.path.join(input_folder, filename)
+            with open(file_path, 'r') as file:
+                file_content = file.read()
+                convert_file(file_content, filename, output_folder)
+
+if __name__ == '__main__':
+    main()

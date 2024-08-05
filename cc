@@ -1,7 +1,9 @@
-SELECT UPPER(
-    CONCAT(
-        LEFT(ticker, REGEXP_INSTR(ticker, '[a-z]') - 1),
-        '-',
-        RIGHT(ticker, CHAR_LENGTH(ticker) - REGEXP_INSTR(ticker, '[a-z]') + 1)
-    )
-) AS ticker_with_hyphen
+SELECT 
+    ticker,
+    REGEXP_INSTR(ticker, '[a-z]') AS first_lowercase_position
+FROM
+    (SELECT '123abCDef' AS ticker
+     UNION ALL
+     SELECT 'ABCD'
+     UNION ALL
+     SELECT 'a1B2C3') AS sample_table;

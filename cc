@@ -1,15 +1,12 @@
-SELECT CONCAT_WS('',
-    'Outer Loop where par_cass_id = ', CASE WHEN par_cass_id IS NULL THEN 'NULL' ELSE CAST(par_cass_id AS CHAR(10)) END,
-    ' and par_sub_cass_id = ', CASE WHEN par_sub_cass_id IS NULL THEN 'NULL' ELSE CAST(par_sub_cass_id AS CHAR(10)) END,
-    ' and par_country_code = "', par_country_code,
-    '" and par_exchangeId = "', par_exchangeId,
-    '" and par_pref_type = "', par_pref_type,
-    '" and par_pref_value = "', par_pref_value,
-    '" and par_flow_type = "', par_flow_type,
-    '" and par_convert_book = ', CASE WHEN par_convert_book IS NULL THEN 'NULL' ELSE CAST(par_convert_book AS CHAR(10)) END,
-    ' and par_account_mnemonic = "', par_account_mnemonic,
-    '" and par_business_unit = "', par_business_unit,
-    '" and par_delete_missing = ', CASE WHEN par_delete_missing IS NULL THEN 'NULL' ELSE CAST(par_delete_missing AS CHAR(10)) END,
-    ' and par_rdt_on = ', CASE WHEN par_rdt_on IS NULL THEN 'NULL' ELSE CAST(par_rdt_on AS CHAR(10)) END,
-    '"'
-) INTO var_print_string;
+SELECT UPPER(
+    CASE
+        WHEN LOCATE(LOWER(SUBSTRING(ticker, 1, 1)), ticker) > 0 THEN
+            CONCAT(
+                REPLACE(SUBSTRING(ticker, 1, LOCATE(LOWER(SUBSTRING(ticker, 1, 1)), ticker) - 1), '-', ''),
+                SUBSTRING(ticker, LOCATE(LOWER(SUBSTRING(ticker, 1, 1)), ticker))
+            )
+        ELSE
+            ticker
+    END
+) AS processed_ticker
+FROM (SELECT 'AC*' AS ticker) AS temp;

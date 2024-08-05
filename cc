@@ -1,10 +1,7 @@
 SELECT UPPER(
-    IF(
-        LOCATE(LOWER(SUBSTRING('AC*', 1, 1)), 'AC*') > 0,
-        CONCAT(
-            REPEAT('-', LOCATE(LOWER(SUBSTRING('AC*', 1, 1)), 'AC*') - 1),
-            SUBSTRING('AC*', LOCATE(LOWER(SUBSTRING('AC*', 1, 1)), 'AC*'))
-        ),
-        'AC*'
+    CONCAT(
+        LEFT(ticker, REGEXP_INSTR(ticker, '[a-z]') - 1),
+        '-',
+        RIGHT(ticker, CHAR_LENGTH(ticker) - REGEXP_INSTR(ticker, '[a-z]') + 1)
     )
-) AS processed_ticker;
+) AS ticker_with_hyphen
